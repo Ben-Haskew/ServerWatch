@@ -1,12 +1,14 @@
 import sys
 sys.path.append('/home/ben/waveshare/e-Paper/RaspberryPi_JetsonNano/python/lib')
 import time
+import subprocess
 from waveshare_epd import epd2in13_V3
 from PIL import Image, ImageDraw, ImageFont
 
 epd = epd2in13_V3.EPD()
 epd.init()
 epd.Clear(0xFF)
+
 
 def cpuTemp():
     try:
@@ -15,12 +17,15 @@ def cpuTemp():
         return rawTemp / 1000.0 #get temp from millicelsius to celsius
     except Exception as e:
         return
-def gpuCheck()
-
-GPU = i
-if GPU == 'i':
-	GPU = cpuTemp()
+def gpuCheck():
+	try:
+		output = subprocess.check_output("lspci | grep -i vga", shell=True).decode()
+		return output.strip()
+	except Exception as e:
+		return f"Error: {e}"
+print(gpuCheck())
 CPU = cpuTemp()
+GPU = 1
 DISC = 1
 #initialise screen
 image = Image.new('1', (epd.height, epd.width), 255)
