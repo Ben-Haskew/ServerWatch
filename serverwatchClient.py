@@ -1,22 +1,33 @@
 #import of screen drivers
-import subprocess
+import socket
 import sys
-import serial
+import os
 
-#startup socat
-proc = subprocess.Popen( #open as child, script keeps going
-    ['sudo', 'socat', '-v', '/dev/ttyGS0,rawer', '-'], #like running the command in a terminal ##socat functions as the bridge
-    stdout=subprocess.PIPE, #capture output
-    stderr=subprocess.DEVNULL #get rid of error messages
-)
+#Relaunch with sudo if not root
+if os.geteuid() != 0:
+    import subprocess
+    subprocess.run(['sudo', 'python3'] + sys.argv)
+    sys.exit()
+#using connection over local wifi
+HOST = '192.168.0.121' #hostcomputer
+PORT = 5000
 
-print('ready')
-sys.stdout.flush()
+server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+server.bind((HOST, PORT))
+server.listen(1) #listen
 
-#data recieving logic
-for line in proc.stdout: #loops
-    text = line.decode('utf-8', errors='replace').strip() #convert data into string
-    if text and not text.startswith('>'): #skip rubbish data
-        print("recieved:", text) #display what data was recieved in command line
-        sys.stdout.flush()
-        #code that displays the input on the screen will go here
+print(f'Listening on {HOST}:{PORT}')
+
+while True:
+    conn, addr = server.accept()
+    print(f'Connected from {addr}')
+    with conn:
+        while True:
+            data = conn.recv(1024)
+            if not data:
+                break
+            temps = json.loads(data.decode('utf-8').strip())
+            print(f"CPU: {temps['cpu']}°C")
+            print(f"SSD: {temps['ssd']}°C")
+            print(f"Board: {temps['board']}°C")
