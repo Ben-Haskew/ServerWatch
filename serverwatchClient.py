@@ -1,8 +1,15 @@
 #import of screen drivers
+from waveshare_epd import epd2in13_V3
+from PIL import Image, ImageDraw, ImageFont
+from temp import displayScreen
 import socket
 import sys
 import os
 import json
+
+epd = epd2in13_V3.EPD()
+epd.init()
+epd.Clear(0xFF)
 
 #relaunch with sudo if not root
 if os.geteuid() != 0:
@@ -46,4 +53,4 @@ while True:
             temps = json.loads(data.decode('utf-8').strip())
             print(f"CPU: {temps['cpu']}°C")
             print(f"SSD: {temps['ssd']}°C")
-            print(f"Board: {temps['board']}°C")
+            print(f"Boardo: {temps['board']}°C")
