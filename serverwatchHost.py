@@ -46,11 +46,12 @@ operatingSys = platform.system()
 HOST = 'raspberrypi.local'  #Pi WiFi IP
 PORT = 5000
 
-client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-client.connect((HOST, PORT))
 #this SENDS the temps
+connectFail = 0
 while True:
     try:
+        client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        client.connect((HOST, PORT))
         print(f'Connected to {HOST}:{PORT}')
         if operatingSys == "Linux":
             temps = getTempsLinux()
@@ -64,3 +65,7 @@ while True:
         time.sleep(1)
     except ConnectionRefusedError:
         print('Could not connect; Is the script running client side?')
+        connectFail += 1
+        if connectFail >= 3:
+            client.close()
+            break
