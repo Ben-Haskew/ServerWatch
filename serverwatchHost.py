@@ -35,7 +35,9 @@ def getTempsLinux():
 
 #parse temp funciton (win)
 def getTempsWin():
-    pass
+    temps = {'cpu': None, 'ssd': None, 'board': None}
+    temp = 2
+    return temps
     #CPU = WinTmp.CPU_Temp()
     #return CPU
     #print(CPU)
@@ -45,20 +47,20 @@ HOST = 'raspberrypi.local'  #Pi WiFi IP
 PORT = 5000
 
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+client.connect((HOST, PORT))
 #this SENDS the temps
-try:
-    client.connect((HOST, PORT))
-    print(f'Connected to {HOST}:{PORT}')
-    if operatingSys == "Linux":
-        temps = getTempsLinux()
-    elif operatingSys == "Windows":
-        temps = getTempsWin()
-    elif operatingSys == "Darwin": #macOS
-        print("Incompatible operating system! Please refer to the README.MD file")
-    data = json.dumps(temps) + '\n'
-    client.sendall(data.encode('utf-8')) #convert to readable text
-    print('Sent!')
-except ConnectionRefusedError:
-    print('Could not connect; Is the script running client side?')
-finally:
-    client.close()
+while True:
+    try:
+        print(f'Connected to {HOST}:{PORT}')
+        if operatingSys == "Linux":
+            temps = getTempsLinux()
+        elif operatingSys == "Windows":
+            temps = getTempsWin()
+        elif operatingSys == "Darwin": #macOS
+            print("Incompatible operating system! Please refer to the README.MD file")
+        data = json.dumps(temps) + '\n'
+        client.sendall(data.encode('utf-8')) #convert to readable text
+        print('Sent!')
+        time.sleep(1)
+    except ConnectionRefusedError:
+        print('Could not connect; Is the script running client side?')
