@@ -1,4 +1,6 @@
 #import of screen drivers
+import sys
+sys.path.append('/home/ben/waveshare/e-Paper/RaspberryPi_JetsonNano/python/lib')
 from waveshare_epd import epd2in13_V3
 from PIL import Image, ImageDraw, ImageFont
 from temp import displayScreen
@@ -28,20 +30,6 @@ server.listen(1) #listen
 print(f'Listening on {HOST}:{PORT}')
 
 #this RECIEVES the temps
-def listen():
-    while True:
-        conn, addr = server.accept()
-        print(f'Connected from {addr}')
-        with conn:
-            while True:
-                data = conn.recv(1024)
-                if not data:
-                    break
-                temps = json.loads(data.decode('utf-8').strip())
-                return{temps['cpu']}
-                return{temps['ssd']}
-                return{temps['board']}
-listen()
 while True:
     conn, addr = server.accept()
     #print(f'Connected from {addr}')
@@ -51,6 +39,4 @@ while True:
             if not data:
                 break
             temps = json.loads(data.decode('utf-8').strip())
-            print(f"CPU: {temps['cpu']}°C")
-            print(f"SSD: {temps['ssd']}°C")
-            print(f"Boardo: {temps['board']}°C")
+            displayScreen(epd, temps['cpu'], temps['ssd'], temps['board'])

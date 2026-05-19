@@ -9,7 +9,7 @@ epd = epd2in13_V3.EPD()
 epd.init()
 epd.Clear(0xFF)
 
-def displayScreen():
+def displayScreen(epd, cpu, ssd, board):
 	#initialise screen and font
 	font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 18)
 	image = Image.new('1', (epd.height, epd.width), 255)
@@ -25,15 +25,10 @@ def displayScreen():
 	x3, y3 = 140, 61
 	w = 80
 	h = 30
-	while True:
-		draw.rectangle((x1, y1, x1 + w, y1 + h), fill=255)
-		draw.rectangle((x2, y2, x2 + w, y2 + h), fill=255)
-		draw.rectangle((x3, y3, x3 + w, y3 + h), fill=255)
-		draw.text((140, 1), f"{cpu}℃ ", font=font, fill=0)
-		draw.text((140, 31), f"{ssd}℃ ", font=font, fill=0)
-		draw.text((140, 61), f"{board}℃ ", font=font, fill=0)
-		epd.displayPartial(epd.getbuffer(image))
-		time.sleep(0.1)
+	draw.rectangle((x1, y1, x1 + w, y1 + h), fill=255)
+	draw.rectangle((x2, y2, x2 + w, y2 + h), fill=255)
+	draw.rectangle((x3, y3, x3 + w, y3 + h), fill=255)
+	draw.text((140, 1), f"{cpu}℃ ", font=font, fill=0)
+	draw.text((140, 31), f"{ssd}℃ ", font=font, fill=0)
+	draw.text((140, 61), f"{board}℃ ", font=font, fill=0)
 	epd.displayPartial(epd.getbuffer(image))
-	time.sleep(0.1)
-	epd.sleep()

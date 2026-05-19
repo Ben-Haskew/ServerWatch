@@ -62,7 +62,7 @@ while True:
         data = json.dumps(temps) + '\n'
         client.sendall(data.encode('utf-8')) #convert to readable text
         print('Sent!')
-        time.sleep(1)
+        time.sleep(2)
     except ConnectionRefusedError:
         print('Could not connect; Is the script running client side?')
         connectFail += 1
