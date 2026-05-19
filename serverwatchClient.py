@@ -2,6 +2,7 @@
 import socket
 import sys
 import os
+import json
 
 #relaunch with sudo if not root
 if os.geteuid() != 0:
@@ -9,7 +10,7 @@ if os.geteuid() != 0:
     subprocess.run(['sudo', 'python3'] + sys.argv)
     sys.exit()
 #using connection over local wifi
-HOST = '192.168.0.121' #hostcomputer
+HOST = '0.0.0.0' #hostcomputer
 PORT = 5000
 
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -34,3 +35,15 @@ def listen():
                 return{temps['ssd']}
                 return{temps['board']}
 listen()
+while True:
+    conn, addr = server.accept()
+    #print(f'Connected from {addr}')
+    with conn:
+        while True:
+            data = conn.recv(1024)
+            if not data:
+                break
+            temps = json.loads(data.decode('utf-8').strip())
+            print(f"CPU: {temps['cpu']}°C")
+            print(f"SSD: {temps['ssd']}°C")
+            print(f"Board: {temps['board']}°C")
