@@ -17,7 +17,7 @@ epd.Clear(0xFF)
 image = Image.new('1', (epd.height, epd.width), 255)
 draw = ImageDraw.Draw(image)
 font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 18)
-draw.text((61, 20), "Server Smart", font=font, fill=0)
+draw.text((61, 20), "Server Watch", font=font, fill=0)
 draw.text((51, 90), "SYSTEM READY", font=font, fill=0)
 image.paste(icon, (1, 1))
 

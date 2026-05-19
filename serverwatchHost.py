@@ -5,7 +5,9 @@ import platform
 import serial
 import socket
 import json
+import WinTmp
 #parse temps function
+#this GETS the temps
 def getTempsLinux():
         result = subprocess.run(['sensors'], capture_output=True, text=True)
     
@@ -18,35 +20,34 @@ def getTempsLinux():
         
             if '°C' in line and ':' in line:
                 try:
-                    label = line.split(':')[0].strip()
-                    temp = line.split(':')[1].strip().split('°C')[0].strip().split()[0].lstrip('+')
-                    temp = float(temp)
+                    label = line.split(':')[0].strip() #extract name
+                    temp = line.split(':')[1].strip().split('°C')[0].strip().split()[0].lstrip('+') #extract number
+                    temp = float(temp) #convert to number
                 
                     if currentChip and 'coretemp' in currentChip and 'Package id 0' in label:
-                        temps['cpu'] = temp #temp of all cores i think
+                        temps['cpu'] = temp #temp of all cores/overall temp
                     elif currentChip and 'nvme' in currentChip and 'Composite' in label:
-                        temps['disc'] = temp #only works on nvme ssds; need SMART data for hdds
+                        temps['ssd'] = temp #only works on nvme ssds; need SMART data for hdds
                     elif currentChip and 'acpitz' in currentChip and 'temp1' in label:
-                        temps['board'] = temp
+                        temps['board'] = temp #temp of the whole board
                     
                 except (IndexError, ValueError):
                     continue 
         return temps
 temps = getTempsLinux()
-print(f"CPU:   {temps['cpu']}°C")
-print(f"SSD:   {temps['disc']}°C")
-print(f"Board: {temps['board']}°C")
 
 #parse temp funciton (win)
-def getTempsWindows():
-    pass
+def getTempsWin():
+    CPU = WinTmp.CPU_Temp()
+    return CPU
+    print(CPU)
 
 operatingSys = platform.system()
 HOST = 'raspberrypi.local'  #Pi WiFi IP
 PORT = 5000
 
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-if operatingSys == "Linux":
+if operatingSys == "Linux": #this SENDS the temps
         try:
             client.connect((HOST, PORT))
             print(f'Connected to {HOST}:{PORT}')
@@ -62,7 +63,7 @@ elif operatingSys == "Windows":
         try:
             client.connect((HOST, PORT))
             print(f'Connected to {HOST}:{PORT}')
-            temps = getTempsLinux()
+            temps = getTempsWin()
             data = json.dumps(temps) + '\n'
             client.sendall(data.encode('utf-8'))
             print('Sent!')
@@ -70,5 +71,5 @@ elif operatingSys == "Windows":
             print('Could not connect; Is the script running client side?')
         finally:
             client.close()
-elif operatingSys == "darwin": #macOS
+elif operatingSys == "Darwin": #macOS
     print("Incompatible operating system! Please refer to the README.MD file")

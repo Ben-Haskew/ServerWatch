@@ -3,7 +3,7 @@ import socket
 import sys
 import os
 
-#Relaunch with sudo if not root
+#relaunch with sudo if not root
 if os.geteuid() != 0:
     import subprocess
     subprocess.run(['sudo', 'python3'] + sys.argv)
@@ -19,15 +19,18 @@ server.listen(1) #listen
 
 print(f'Listening on {HOST}:{PORT}')
 
-while True:
-    conn, addr = server.accept()
-    print(f'Connected from {addr}')
-    with conn:
-        while True:
-            data = conn.recv(1024)
-            if not data:
-                break
-            temps = json.loads(data.decode('utf-8').strip())
-            print(f"CPU: {temps['cpu']}°C")
-            print(f"SSD: {temps['ssd']}°C")
-            print(f"Board: {temps['board']}°C")
+#this RECIEVES the temps
+def listen():
+    while True:
+        conn, addr = server.accept()
+        print(f'Connected from {addr}')
+        with conn:
+            while True:
+                data = conn.recv(1024)
+                if not data:
+                    break
+                temps = json.loads(data.decode('utf-8').strip())
+                return{temps['cpu']}
+                return{temps['ssd']}
+                return{temps['board']}
+listen()
