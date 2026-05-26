@@ -1,23 +1,29 @@
 #import of screen drivers
 import sys
-sys.path.append('/home/ben/waveshare/e-Paper/RaspberryPi_JetsonNano/python/lib')
-from waveshare_epd import epd2in13_V3
+# sys.path.append('/home/ben/waveshare/e-Paper/RaspberryPi_JetsonNano/python/lib')
+sys.path.append('/home/Whisplay/runtime')
+from whisplay import WhisPlayBoard
+# from waveshare_epd import epd2in13_V3
 from PIL import Image, ImageDraw, ImageFont
-from temp import displayScreen
+from tempNEW import displayScreen
 import socket
 import sys
 import os
 import json
 
-epd = epd2in13_V3.EPD()
-epd.init()
-epd.Clear(0xFF)
+# epd = epd2in13_V3.EPD()
+# epd.init()
+# epd.Clear(0xFF)
 
 #relaunch with sudo if not root
 if os.geteuid() != 0:
     import subprocess
     subprocess.run(['sudo', 'python3'] + sys.argv)
     sys.exit()
+
+board = WhisPlayBoard()
+board.init()
+
 #using connection over local wifi
 HOST = '0.0.0.0' #hostcomputer
 PORT = 5000
