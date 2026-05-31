@@ -8,7 +8,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 
 
-icon = Image.open("/home/ben/serverwatchlowres.png")
+icon = Image.open("/home/ben/ServerWatch/serverwatchlowres.png")
 icon = icon.convert("1")
 epd = epd2in13_V3.EPD()
 epd.init()

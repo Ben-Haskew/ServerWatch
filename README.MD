@@ -2,7 +2,7 @@
 This only works over local wifi. they can only communicate when on the SAME local network
 ## Prerequisites
 if operating on linux, the *lm-sensors* module is required.\
-Install with\ 
+Install with
 'sudo apt-get install lm-sensors'
 
 ## System Requirements

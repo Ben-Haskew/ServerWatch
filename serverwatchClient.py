@@ -1,11 +1,10 @@
 #import of screen drivers
 import sys
 # sys.path.append('/home/ben/waveshare/e-Paper/RaspberryPi_JetsonNano/python/lib')
-sys.path.append('/home/Whisplay/runtime')
-from whisplay import WhisPlayBoard
+sys.path.append('/home/ben/Whisplay/runtime')
 # from waveshare_epd import epd2in13_V3
-from PIL import Image, ImageDraw, ImageFont
-from tempNEW import displayScreen
+#from PIL import Image, ImageDraw, ImageFont
+from tempNEW import displayScreen, board
 import socket
 import sys
 import os
@@ -21,8 +20,6 @@ if os.geteuid() != 0:
     subprocess.run(['sudo', 'python3'] + sys.argv)
     sys.exit()
 
-board = WhisPlayBoard()
-board.init()
 
 #using connection over local wifi
 HOST = '0.0.0.0' #hostcomputer
@@ -45,4 +42,4 @@ while True:
             if not data:
                 break
             temps = json.loads(data.decode('utf-8').strip())
-            displayScreen(epd, temps['cpu'], temps['ssd'], temps['board'])
+            displayScreen(board, temps['cpu'], temps['ssd'], temps['board'])
