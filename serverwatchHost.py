@@ -2,14 +2,13 @@ import subprocess
 import os
 import time
 import platform
-import serial
 import socket
 import json
 #import WinTmp
 #parse temps function
 #this GETS the temps
 def getTempsLinux():
-    result = subprocess.run(['sensors'], capture_output=True, text=True) 
+    result = subprocess.run(['/usr/bin/sensors'], capture_output=True, text=True) 
     temps = {'cpu': None, 'ssd': None, 'board': None}
     currentChip = None
     
@@ -43,7 +42,7 @@ def getTempsWin():
     #print(CPU)
 
 operatingSys = platform.system()
-HOST = 'raspberrypi.local'  #Pi WiFi IP
+HOST = '192.168.0.120'  #Pi WiFi IP
 PORT = 5000
 
 #this SENDS the temps
