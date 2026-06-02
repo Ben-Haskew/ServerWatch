@@ -42,7 +42,7 @@ def getTempsWin():
     #print(CPU)
 
 operatingSys = platform.system()
-HOST = '192.168.0.120'  #Pi WiFi IP
+HOST = '172.20.10.2'  #Pi WiFi IP
 PORT = 5000
 
 #this SENDS the temps
