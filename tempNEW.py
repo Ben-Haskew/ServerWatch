@@ -11,6 +11,8 @@ board = create_whisplay_hardware(
 )
 board.set_backlight(70)
 
+#DONT TOUCH#
+#function to convert PIL image into RGB
 def _rgb565_bytes(image: Image.Image) -> bytes:
     rgb = image.convert("RGB")
     output = bytearray()
@@ -35,4 +37,5 @@ def displayScreen(board, cpu, ssd, temp_board):
     draw.text((10, 108), f"{ssd}°C",        font=font, fill=(200, 50, 50))
     draw.text((10, 168), f"{temp_board}°C", font=font, fill=(200, 50, 50))
 
+    image = image.rotate(90, expand=True) 
     board.draw_image(0, 0, board.LCD_WIDTH, board.LCD_HEIGHT, _rgb565_bytes(image))
