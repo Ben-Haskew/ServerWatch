@@ -9,6 +9,7 @@ import socket
 import sys
 import os
 import json
+import threading
 
 # epd = epd2in13_V3.EPD()
 # epd.init()
@@ -19,7 +20,15 @@ if os.geteuid() != 0:
     import subprocess
     subprocess.run(['sudo', 'python3'] + sys.argv)
     sys.exit()
-
+def respond():
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+    sock.bind(("", 5001))
+    while True:
+        data, addr = sockrecvfrom(1024)
+        if data == b"WHERE":
+            sock.sendto(b"HERE", addr)
+threading.Thread(target=respond, daemon=True).start()
 
 #using connection over local wifi
 HOST = '0.0.0.0' #hostcomputer

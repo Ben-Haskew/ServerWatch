@@ -41,9 +41,33 @@ def getTempsWin():
     #return CPU
     #print(CPU)
 
+#locate device on the network
+def broadcast(timeout=5):
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+    sock.settimeout(timeout)
+    try:
+        sock.sendto(b"WHERE", ("<broadcast>", 5001)) #sent data
+        data, addr = sock.recvfrom(1024)
+        if data == b"HERE": #expected response
+            print(f"found at {addr[0]}") #debug
+            return addr[0]
+    except socket.timout:
+        print('Not found. are both devices on the same network?') #debug
+        return None
+    finally:
+        sock.close()
+
 operatingSys = platform.system()
-HOST = '192.168.0.120'  #Pi WiFi IP
 PORT = 5000
+DISCOVERY_PORT = 5001
+
+HOST = broadcast()
+if HOST is None:
+    print("not found. exiting") #debug
+    exit(1)
+connectFail=0
+#'192.168.0.120'  #Pi WiFi IP
 
 #this SENDS the temps
 connectFail = 0
