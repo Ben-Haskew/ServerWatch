@@ -43,7 +43,15 @@ def flashLight(board, colour, speed=0.2):
 
 def flashStopG(board, colour):
     flashStop.set()
-    board.set_rgb(*colour) #one colour after stopping
+    if flashThread and flashThread.is_alive():
+        flashThread.join()
+    
+    def transition():
+        board.set_rgb(255,0,0)
+        time.sleep(0.5)
+        board.set_rgb_fade(*colour,duration_ms=2000)
+    # board.set_rgb(*colour) #one colour after stopping
+    threading.Thread(target=transition, daemon=True).start()
 
 def updateLight(cpu):
     global currentColour
