@@ -4,7 +4,14 @@ import time
 import platform
 import socket
 import json
-#import WinTmp
+import clr
+clr.AddReference(r'C:\Users\ben\ServerWatch\LibreHardwareMonitorLib')
+from LibreHardwareMonitor import Hardware
+
+
+computer = Hardware.Computer()
+computer.IsCPUEnabled = True
+computer.Open()
 #parse temps function
 #this GETS the temps
 def getTempsLinux():
@@ -35,11 +42,22 @@ def getTempsLinux():
 #parse temp funciton (win)
 def getTempsWin():
     temps = {'cpu': None, 'ssd': None, 'board': None}
-    temp = 2
+    try:
+        for hw in computer.Hardware:
+            if hw.HardwareType == Hardware.HardwareType.CPU:
+                hw.Update()
+                for sensor in hw.Sensors:
+                    if sensor.SensorType == Hardware.SensorType.Temperature:
+                        temp = sensor.Value
+                        if temp is not None and temp > 0:
+                            temps['cpu'] = float(temp)
+                            break
+    except Exception as e:
+        print(f"read error: {e}")
+    print(temps)    
     return temps
-    #CPU = WinTmp.CPU_Temp()
+
     #return CPU
-    #print(CPU)
 
 #locate device on the network
 def broadcast(timeout=5):
