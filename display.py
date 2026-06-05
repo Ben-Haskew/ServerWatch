@@ -10,6 +10,7 @@ board.set_backlight(70)
 currentColour = None
 flashThread = None
 flashStop = threading.Event()
+flashing=False
 
 #DONT TOUCH#
 #function to convert PIL image into RGB
@@ -41,11 +42,13 @@ def flashLight(board, colour, speed=0.2):
     flashThread = threading.Thread(target=flash, daemon=True)
     flashThread.start()
 
+#stop flashing colour
 def flashStopG(board, colour):
     flashStop.set()
     if flashThread and flashThread.is_alive():
         flashThread.join()
     
+    #change from hot to cool range, smooth transition between red and green
     def transition():
         board.set_rgb(255,0,0)
         time.sleep(0.5)
@@ -54,18 +57,18 @@ def flashStopG(board, colour):
     threading.Thread(target=transition, daemon=True).start()
 
 def updateLight(cpu):
-    global currentColour
+    global currentColour, flashing
     if cpu is None:
         colour = (0,0,255)
     elif cpu <= 60: 
         colour = (0,255,0) #less than 60 light turns green
-    elif cpu > 60:
-        colour = (255,0,0) #less than 75 light turns orange
-    elif 75 < cpu < 100:
-        colour = (255,0,0)
-    if colour != currentColour:
+    else:
+        colour = (255,0,0) #bigger than 60 light turns red
+    colourChange= cpu is not None and cpu >= 80
+    if colour != currentColour or colourChange != flashing:
         currentColour = colour
-        if cpu >= 60:
+        flashing = colourChange
+        if colourChange: #flash red if above 80
             flashLight(board, colour) 
         else:
             flashStopG(board, colour)
@@ -75,17 +78,19 @@ def backgroundDisplay(board,):
     font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 22)
     image = Image.new('RGB', (board.LCD_HEIGHT, board.LCD_WIDTH), (11, 16, 24))
     draw = ImageDraw.Draw(image)
-
-    draw.text((10, 20),  "Temp CPU:",   font=font, fill=(150, 205, 255))
-    draw.text((10, 90),  "Temp SSD:",   font=font, fill=(150, 205, 255))
-    draw.text((10, 160), "Temp Board:", font=font, fill=(150, 205, 255))
+    
+    draw.text((55, 5),  "Temperatures",   font=font, fill=(150, 205, 255))
+    draw.text((10, 20),  "-----------------------------",   font=font, fill=(150, 205, 255))
+    draw.text((10, 40),  "CPU:",   font=font, fill=(150, 205, 255))
+    draw.text((10, 110),  "SSD:",   font=font, fill=(150, 205, 255))
+    draw.text((10, 180), "Board:", font=font, fill=(150, 205, 255))
 
     image = image.rotate(-90, expand=True)
     board.draw_image(0, 0, board.LCD_WIDTH, board.LCD_HEIGHT, _rgb565_bytes(image))
 
 def updateDisplay(board,cpu, ssd, temp_board):
     font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 22)
-    updates = [(f"{cpu}°C",155,20),(f"{ssd}°C",155,90),(f"{temp_board}°C",155,160),]
+    updates = [(f"{cpu}°C",155,40),(f"{ssd}°C",155,110),(f"{temp_board}°C",155,180),]
 
     for text, x, y in updates:
         patch_w, patch_h = 120, 30
