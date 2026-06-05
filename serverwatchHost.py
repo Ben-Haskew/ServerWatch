@@ -52,7 +52,7 @@ def broadcast(timeout=5):
         if data == b"HERE": #expected response
             print(f"found at {addr[0]}") #debug
             return addr[0]
-    except socket.timout:
+    except socket.timeout:
         print('Not found. are both devices on the same network?') #debug
         return None
     finally:

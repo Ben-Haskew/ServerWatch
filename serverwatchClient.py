@@ -1,10 +1,10 @@
 #import of screen drivers
 import sys
 # sys.path.append('/home/ben/waveshare/e-Paper/RaspberryPi_JetsonNano/python/lib')
-sys.path.append('/home/ben/Whisplay/runtime')
+
 # from waveshare_epd import epd2in13_V3
 #from PIL import Image, ImageDraw, ImageFont
-from tempNEW import displayScreen, board
+
 import socket
 import sys
 import os
@@ -20,12 +20,14 @@ if os.geteuid() != 0:
     import subprocess
     subprocess.run(['sudo', 'python3'] + sys.argv)
     sys.exit()
+sys.path.append('/home/ben/Whisplay/runtime')    
+from tempNEW import backgroundDisplay, updateDisplay, board
 def respond():
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
     sock.bind(("", 5001))
     while True:
-        data, addr = sockrecvfrom(1024)
+        data, addr = sock.recvfrom(1024)
         if data == b"WHERE":
             sock.sendto(b"HERE", addr)
 threading.Thread(target=respond, daemon=True).start()
@@ -42,6 +44,7 @@ server.listen(1) #listen
 print(f'Listening on {HOST}:{PORT}')
 
 #this RECIEVES the temps
+backgroundDisplay(board)
 while True:
     conn, addr = server.accept()
     #print(f'Connected from {addr}')
@@ -51,4 +54,5 @@ while True:
             if not data:
                 break
             temps = json.loads(data.decode('utf-8').strip())
-            displayScreen(board, temps['cpu'], temps['ssd'], temps['board'])
+            updateDisplay(board, temps['cpu'], temps['ssd'], temps['board'])
+            
