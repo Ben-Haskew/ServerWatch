@@ -4,10 +4,32 @@ import time
 import platform
 import socket
 import json
-def getTempsLinux():
-    result = subprocess.run(['/usr/bin/sensors'], capture_output=True, text=True) 
-    temps = {'cpu': 100, 'ssd': 50, 'board': 100}
+import threading
+def getTempsLinux(overrides=None):
+    temps = {'cpu': 0, 'ssd': 0, 'board': 0}
+    if overrides:
+        temps.update(overrides)
     return temps
+
+overrides = {}
+
+def inputThread():
+    global overrides
+    while True:
+        try:
+            raw = input("Override (e.g. cpu=90 ssd=50): ").strip()
+            if raw == "clear":
+                overrides = {}
+                print("Overrides cleared")
+            else:
+                for part in raw.split():
+                    key, val = part.split("=")
+                    overrides[key.strip()] = float(val.strip())
+                print(f"Overrides set: {overrides}")
+        except (ValueError, EOFError):
+            pass
+
+threading.Thread(target=inputThread, daemon=True).start()
 
 #locate device on the network
 def broadcast(timeout=5):
@@ -40,7 +62,7 @@ while True:
         client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         client.connect((HOST, PORT))
         if operatingSys == "Linux":
-            temps = getTempsLinux()
+            temps = getTempsLinux(overrides=overrides if overrides else None)
         data = json.dumps(temps) + '\n'
         client.sendall(data.encode('utf-8')) #convert to readable text
         time.sleep(2)
