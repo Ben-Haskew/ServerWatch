@@ -14,13 +14,7 @@ import threading
 # epd = epd2in13_V3.EPD()
 # epd.init()
 # epd.Clear(0xFF)
-
-#relaunch with sudo if not root
-if os.geteuid() != 0:
-    import subprocess
-    subprocess.run(['sudo', 'python3'] + sys.argv)
-    sys.exit()
-sys.path.append('/home/ben/Whisplay/runtime')    
+sys.path.append('/home/ben/Whisplay/runtime')
 from display import backgroundDisplay, updateDisplay, board
 def respond():
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
