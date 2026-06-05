@@ -75,7 +75,7 @@ while True:
     try:
         client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         client.connect((HOST, PORT))
-        print(f'Connected to {HOST}:{PORT}')
+        # print(f'Connected to {HOST}:{PORT}') #debug
         if operatingSys == "Linux":
             temps = getTempsLinux()
         elif operatingSys == "Windows":
@@ -84,7 +84,7 @@ while True:
             print("Incompatible operating system! Please refer to the README.MD file")
         data = json.dumps(temps) + '\n'
         client.sendall(data.encode('utf-8')) #convert to readable text
-        print('Sent!')
+        # print('Sent!') #debug
         time.sleep(2)
     except ConnectionRefusedError:
         print('Could not connect; Is the script running client side?')

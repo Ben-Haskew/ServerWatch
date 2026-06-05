@@ -21,7 +21,7 @@ if os.geteuid() != 0:
     subprocess.run(['sudo', 'python3'] + sys.argv)
     sys.exit()
 sys.path.append('/home/ben/Whisplay/runtime')    
-from tempNEW import backgroundDisplay, updateDisplay, board
+from display import backgroundDisplay, updateDisplay, board
 def respond():
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
