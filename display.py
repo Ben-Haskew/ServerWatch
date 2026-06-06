@@ -43,7 +43,7 @@ def initAudio():
 
     pygame.mixer.init(frequency=44100, size=-16, channels=1, buffer=512)
 
-def sound(frequency=440, duration=0.5, volume=0.5, shape="sine", loops=-1, pause=0.5):
+def sound(frequency=440, duration=0.2, volume=0.5, shape="sine", loops=-1, pause=0.2):
     global curSound
     if not pygame.mixer.get_init():
         return

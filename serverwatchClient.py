@@ -43,10 +43,20 @@ while True:
     conn, addr = server.accept()
     #print(f'Connected from {addr}')
     with conn:
+        buffer=""
         while True:
             data = conn.recv(1024)
             if not data:
                 break
-            temps = json.loads(data.decode('utf-8').strip())
-            updateDisplay(board, temps['cpu'], temps['ssd'], temps['board'])
+            buffer +=data.decode('utf-8')
+            while '\n' in buffer:
+                line, buffer=buffer.split('\n', 1)
+                line = line.strip()
+                if line:
+                    try:
+                        temps = json.loads(line)
+                        updateDisplay(board, temps['cpu'], temps['ssd'], temps['board'])
+                    except json.JSONDecodeError as e:
+                        print(f"json error: {e}")
+                        continue
             
