@@ -4,16 +4,45 @@ import time
 import platform
 import socket
 import json
-import clr
-clr.AddReference(r'C:\Users\ben\ServerWatch\LibreHardwareMonitorLib')
-from LibreHardwareMonitor import Hardware
+# import clr
+#clr.AddReference(r'C:\Users\ben\ServerWatch\LibreHardwareMonitorLib')
+# from LibreHardwareMonitor import Hardware
 
 
-computer = Hardware.Computer()
-computer.IsCPUEnabled = True
-computer.Open()
+# computer = Hardware.Computer()
+# computer.IsCPUEnabled = True
+# computer.Open()
 #parse temps function
 #this GETS the temps
+
+def autoStartLinux(): #add to systemd on first run
+    scriptPath = os.path.abspath(__file__)
+    service = f"""[Unit]
+Description=ServerWatch Host
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 {scriptPath}
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+"""
+    servicePath = os.path.expanduser("~/.config/systemd/user/serverwatch.service")
+    os.makedirs(os.path.dirname(servicePath), exist_ok=True)
+    
+    if not os.path.exists(servicePath):
+        with open(servicePath, 'w') as f:
+            f.write(service)
+        subprocess.run(['systemctl', '--user', 'enable', 'serverwatch.service'])
+        subprocess.run(['systemctl', '--user', 'start', 'serverwatch.service'])
+        print("Added to autostart")
+    else:
+        print("Already in autostart")
+
+autoStartLinux()
 def getTempsLinux():
     result = subprocess.run(['/usr/bin/sensors'], capture_output=True, text=True) 
     temps = {'cpu': None, 'ssd': None, 'board': None}
@@ -79,34 +108,52 @@ def broadcast(timeout=5):
 operatingSys = platform.system()
 PORT = 5000
 DISCOVERY_PORT = 5001
+HOST = None
 
-HOST = broadcast()
-if HOST is None:
-    print("not found. exiting") #debug
-    exit(1)
-connectFail=0
+
 #'192.168.0.120'  #Pi WiFi IP
 
 #this SENDS the temps
-connectFail = 0
 while True:
     try:
+        HOST = broadcast()
+        if HOST is None:
+            print("not found. retrying") #debug
+            time.sleep(5)
+            continue
         client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        client.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+        client.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPIDLE, 5)   # start keepalive after 5seconds idle
+        client.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, 2)  # probe every 2sec
+        client.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPCNT, 3) # pack it up after 3 times failed
+        client.settimeout(10)
         client.connect((HOST, PORT))
-        # print(f'Connected to {HOST}:{PORT}') #debug
-        if operatingSys == "Linux":
-            temps = getTempsLinux()
-        elif operatingSys == "Windows":
-            temps = getTempsWin()
-        elif operatingSys == "Darwin": #macOS
-            print("Incompatible operating system! Please refer to the README.MD file")
-        data = json.dumps(temps) + '\n'
-        client.sendall(data.encode('utf-8')) #convert to readable text
-        # print('Sent!') #debug
-        time.sleep(2)
-    except ConnectionRefusedError:
+        connectFail=0
+
+        while True:
+                # print(f'Connected to {HOST}:{PORT}') #debug
+                if operatingSys == "Linux":
+                    temps = getTempsLinux()
+                    print(f"got temps: {temps}")
+                elif operatingSys == "Windows":
+                    temps = getTempsWin()
+                elif operatingSys == "Darwin": #macOS
+                    print("Incompatible operating system! Please refer to the README.MD file")
+                data = json.dumps(temps) + '\n'
+                client.sendall(data.encode('utf-8')) #convert to readable text
+                # print('Sent!') #debug
+                time.sleep(2)
+    except(ConnectionRefusedError, OSError) as e:
+        print({e})
         print('Could not connect; Is the script running client side?')
-        connectFail += 1
-        if connectFail >= 3:
+        print('retrying now...')
+        try:
             client.close()
-            break
+        except:
+            pass
+        HOST = None
+        time.sleep(5)
+                # connectFail += 1
+                # if connectFail >= 3:
+                #     client.close()
+                #     break
