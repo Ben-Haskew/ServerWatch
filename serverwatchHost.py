@@ -134,7 +134,7 @@ while True:
                 # print(f'Connected to {HOST}:{PORT}') #debug
                 if operatingSys == "Linux":
                     temps = getTempsLinux()
-                    print(f"got temps: {temps}")
+                    # print(f"got temps: {temps}")
                 elif operatingSys == "Windows":
                     temps = getTempsWin()
                 elif operatingSys == "Darwin": #macOS
