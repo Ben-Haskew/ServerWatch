@@ -1,3 +1,4 @@
+#This is a script used for testing the response to different temperatures on the host
 import subprocess
 import os
 import time

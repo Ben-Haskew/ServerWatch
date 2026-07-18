@@ -4,7 +4,7 @@ import sys
 
 # from waveshare_epd import epd2in13_V3
 #from PIL import Image, ImageDraw, ImageFont
-
+import time
 import socket
 import sys
 import os
@@ -16,6 +16,11 @@ import threading
 # epd.Clear(0xFF)
 sys.path.append('/home/ben/Whisplay/runtime')
 from display import backgroundDisplay, updateDisplay, board
+from demo import onPress, onRelease
+
+def demonstration():
+    onRelease()
+    
 def respond():
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
@@ -23,7 +28,9 @@ def respond():
     while True:
         data, addr = sock.recvfrom(1024)
         if data == b"WHERE":
-            sock.sendto(b"HERE", addr)
+            for _ in range(3):
+                sock.sendto(b"HERE", addr)
+                time.sleep(0.05)
 threading.Thread(target=respond, daemon=True).start()
 
 #using connection over local wifi
