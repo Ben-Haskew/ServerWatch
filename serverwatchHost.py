@@ -98,7 +98,7 @@ def getUsageLinux():
             total = float(parts[0].split()[0])
             used = float(parts[2].split()[0])
             mem = round(used / total * 100, 1)
-    return cpu, mem
+    return {'cpu': cpu, 'mem': mem}
 
 #parse temp funciton (win)
 def getTempsWin():
