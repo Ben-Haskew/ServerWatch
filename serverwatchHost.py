@@ -86,6 +86,21 @@ def getTempsLinux():
             except (IndexError, ValueError):
                 continue 
     return temps
+def getUsageLinux():
+    out = subprocess.run(['top', '-bn1'], capture_output=True, text=True).stdout
+    cpu = ram = None
+    for line in out.split('\n'):
+        if line.startswith('%Cpu'):
+            idle = float(line.split(',')[3].split()[0])
+            cpu = round(100 - idle, 1)
+        elif 'MiB Mem' in line:
+            parts = line.split(':')[1].split(',')
+            total = float(parts[0].split()[0])
+            used = float(parts[2].split()[0])
+            ram = round(used / total * 100, 1)
+    return cpu, ram
+
+print(getUsage())
 
 #parse temp funciton (win)
 def getTempsWin():
@@ -120,61 +135,51 @@ def findIp():
                     return ip, addr['broadcast']
     return None, None
 #locate device on the network
+KNOWN_HOSTS = ['192.168.0.120']
 def broadcast(timeout=5):
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
     sock.settimeout(2)
     result=[None]
-    def receiver():
-        try:
-            while True:
-                data, addr = sock.recvfrom(1024)
-                if data == b"HERE":
-                    result[0] = addr[0]
-                    return
-        except:
-            pass
     try:
         localIp, bcast = findIp()
         print(f"Local IP: {localIp}, Broadcast: {bcast}")
         if localIp:
             sock.bind((localIp, 0))
-
-        t = threading.Thread(target=receiver)
-        t.start()
-        
-        for attempt in range (5):
-            print(f"Attempt {attempt+1}")
-            if localIp:
-                sock.sendto(b"WHERE", (bcast, 5001))
-                print(f"Sent to {bcast}")
-            time.sleep(0.5)
-            if result[0]:
-                break
-        t.join(timeout=timeout)
-        if result[0]:
-            print(f"found at {result[0]}")
-            return result[0]
-           # sock.sendto(b"WHERE", ("<broadcast>", 5001)) #sent data
-            # try:               
-            #     data, addr = sock.recvfrom(1024)
-            #     if data == b"HERE": #expected response
-            #         print(f"found at {addr[0]}") #debug
-            #         return addr[0]
-            # except socket.timeout:
-            #     continue
+        targets = ([bcast] if bcast else []) + KNOWN_HOSTS
+        for attempt in range(5):
+            for t in targets:
+                sock.sendto(b"WHERE", (t, 5001))
+            # listen for a reply for up to 1s before resending
+            sock.settimeout(1)
+            try:
+                while True:
+                    data, addr = sock.recvfrom(1024)
+                    print(f"got {data!r} from {addr}")
+                    if data == b"HERE":
+                        return addr[0]
+            except socket.timeout:
+                continue
+        return None
     except Exception as e:
-        print('Not found. are both devices on the same network?') #debug
-        print(f"Error: {e}")
+        print(f"Discovery error: {e}")
         return None
     finally:
         sock.close()
+def receiver():
+    try:
+        while True:
+            data, addr = sock.recvfrom(1024)
+            if data == b"HERE":
+                result[0] = addr[0]
+                return
+    except:
+        pass
 
 operatingSys = platform.system()
 PORT = 5000
 DISCOVERY_PORT = 5001
 HOST = None
-
 
 #'192.168.0.120'  #Pi WiFi IP
 
@@ -199,6 +204,7 @@ while True:
                 # print(f'Connected to {HOST}:{PORT}') #debug
                 if operatingSys == "Linux":
                     temps = getTempsLinux()
+                    usage = getUsageLinux()
                     # print(f"got temps: {temps}")
                 elif operatingSys == "Windows":
                     temps = getTempsWin()

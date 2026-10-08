@@ -136,18 +136,19 @@ def backgroundDisplay(board,):
     image = Image.new('RGB', (board.LCD_HEIGHT, board.LCD_WIDTH), (11, 16, 24))
     draw = ImageDraw.Draw(image)
     
-    draw.text((55, 5),  "Temperatures",   font=font, fill=(150, 205, 255))
+    draw.text((55, 5),  "Overview",   font=font, fill=(150, 205, 255))
     draw.text((10, 20),  "-----------------------------",   font=font, fill=(150, 205, 255))
     draw.text((10, 40),  "CPU:",   font=font, fill=(150, 205, 255))
-    draw.text((10, 110),  "SSD:",   font=font, fill=(150, 205, 255))
-    draw.text((10, 180), "Board:", font=font, fill=(150, 205, 255))
+    draw.text((10, 60),  "HDD:",   font=font, fill=(150, 205, 255))
+    draw.text((10, 110),  "HDD:",   font=font, fill=(150, 205, 255))
+    # draw.text((10, 180), "Board:", font=font, fill=(150, 205, 255))
 
     image = image.rotate(-90, expand=True)
     board.draw_image(0, 0, board.LCD_WIDTH, board.LCD_HEIGHT, _rgb565_bytes(image))
 
 def updateDisplay(board,cpu, ssd, temp_board):
     font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 22)
-    updates = [(f"{cpu}°C",155,40),(f"{ssd}°C",155,110),(f"{temp_board}°C",155,180),]
+    updates = [(f"{cpu}°C",55,40),(f"{ssd}°C",55,60),(f"{temp_board}°C",55,180),]
 
     for text, x, y in updates:
         patch_w, patch_h = 120, 30
