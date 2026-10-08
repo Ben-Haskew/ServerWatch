@@ -184,4 +184,4 @@ def updateDisplay(cpuTemp, ssdTemp, cpuUse, memUse, players=None):
         # After 90° rotation, x→y and y→(LCD_WIDTH-x-patch_h)
         board.draw_image(board.LCD_WIDTH - y - patch_h,x,patch.width,patch.height,_rgb565_bytes(patch))
     
-    updateLight(cpuTemp)
+    updateLight(cpuTemp, cpuUsage, memUse)
