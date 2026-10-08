@@ -88,7 +88,7 @@ def getTempsLinux():
     return temps
 def getUsageLinux():
     out = subprocess.run(['top', '-bn1'], capture_output=True, text=True).stdout
-    cpu = ram = None
+    cpu = mem = None
     for line in out.split('\n'):
         if line.startswith('%Cpu'):
             idle = float(line.split(',')[3].split()[0])
@@ -97,7 +97,7 @@ def getUsageLinux():
             parts = line.split(':')[1].split(',')
             total = float(parts[0].split()[0])
             used = float(parts[2].split()[0])
-            ram = round(used / total * 100, 1)
+            mem = round(used / total * 100, 1)
     return cpu, mem
 
 #parse temp funciton (win)
