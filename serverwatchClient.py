@@ -10,14 +10,29 @@ import sys
 import os
 import json
 import threading
-
+import signal
+import pygame
+from display import board, ledOff
 # epd = epd2in13_V3.EPD()
 # epd.init()
 # epd.Clear(0xFF)
 sys.path.append('/home/ben/Whisplay/runtime')
 from display import backgroundDisplay, updateDisplay, board
 
-    
+def shutdown(signum, frame):
+    ledOff(board)
+    for action in (
+        lambda: board.set_backlight(0),
+        lambda: pygame.mixer.quit(),
+    ):
+        try:
+            action()
+        except Exception:
+            pass
+    os._exit(0)
+
+signal.signal(signal.SIGTERM, shutdown)
+
 def respond():
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)

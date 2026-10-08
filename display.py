@@ -108,6 +108,20 @@ def flashStopG(board, colour):
     
     transitionThread = threading.Thread(target=transition, daemon=True)
     transitionThread.start()
+def ledOff(board):
+    global flashStop, transitionStop
+    try:
+        flashStop.set()          # use `flashStop = True` if it's a plain bool
+        transitionStop.set()     # same here
+    except Exception:
+        pass
+    for t in (flashThread, transitionThread):
+        if t and t.is_alive():
+            t.join(timeout=0.5)  # timeout, so a stuck thread can't hang shutdown
+    try:
+        board.set_rgb(0, 0, 0)
+    except Exception:
+        pass
 def level(value, warn, crit):
     """0 = ok, 1 = warning, 2 = critical, None = no data"""
     if value is None:
@@ -155,7 +169,8 @@ def backgroundDisplay(board,):
     draw.text((10, 20),  "-----------------------------",   font=font, fill=(150, 205, 255))
     draw.text((10, 40),  "CPU:",   font=font, fill=(150, 205, 255))
     draw.text((10, 70),  "MEM:",   font=font, fill=(150, 205, 255))
-    draw.text((10, 125),  "MC Online:",   font=font, fill=(150, 205, 255))
+    draw.text((10, 100),  "HDD:",   font=font, fill=(150, 205, 255))
+    draw.text((10, 135),  "MC Online:",   font=font, fill=(150, 205, 255))
     # draw.text((10, 110),  "HDD:",   font=font, fill=(150, 205, 255))
     # draw.text((10, 180), "Board:", font=font, fill=(150, 205, 255))
 
@@ -169,9 +184,9 @@ def updateDisplay(cpuTemp, ssdTemp, cpuUse, memUse, players=None):
     updates = [
         (fmt(cpuTemp, "°C"), 85, 40),
  	(fmt(cpuUse, "%"), 160, 40),
- 	(fmt(ssdTemp, "°C"), 85, 70),
+ 	(fmt(ssdTemp, "°C"), 85, 100),
 	(fmt(memUse, "%"), 160, 70),
-	(str(count) if count is not None else "--", 75, 160),
+	(str(count) if count is not None else "--", 160, 135),
     ]
     for text, x, y in updates:
         patch_w, patch_h = 120, 30
