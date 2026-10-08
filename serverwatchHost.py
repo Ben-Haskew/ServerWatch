@@ -1,9 +1,28 @@
 import subprocess
 import os
 import time
-import platform
 import socket
 import json
+import importlib
+import importlib.util
+import sys
+import threading
+REQUIRED = [
+    ('netifaces', 'netifaces')
+]
+
+def depChk():
+    missing = []
+    for module, package in REQUIRED:
+        if importlib.util.find_spec(module) is None:
+            missing.append(package)
+    if missing:
+        for package in missing:
+            subprocess.run([sys.executable, '-m', 'pip', 'install', package, '--break-system-packages'])
+        os.execv(sys.executable, [sys.executable] + sys.argv) #script restart
+depChk()
+import netifaces
+import platform
 # import clr
 #clr.AddReference(r'C:\Users\ben\ServerWatch\LibreHardwareMonitorLib')
 # from LibreHardwareMonitor import Hardware
@@ -87,20 +106,66 @@ def getTempsWin():
     return temps
 
     #return CPU
-
+def findIp():
+    for iface in netifaces.interfaces():
+        if any(iface.startswith(x) for x in ['docker','br-','lo','veth','virbr']):
+            continue
+        addrs= netifaces.ifaddresses(iface)
+        if netifaces.AF_INET in addrs:
+            for addr in addrs[netifaces.AF_INET]:
+                ip=addr['addr']
+                if ip.startswith('192.168.') or ip.startswith('10.') or (
+   		    ip.startswith('172.') and 16 <= int(ip.split('.')[1]) <= 31
+		):
+                    return ip, addr['broadcast']
+    return None, None
 #locate device on the network
 def broadcast(timeout=5):
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-    sock.settimeout(timeout)
+    sock.settimeout(2)
+    result=[None]
+    def receiver():
+        try:
+            while True:
+                data, addr = sock.recvfrom(1024)
+                if data == b"HERE":
+                    result[0] = addr[0]
+                    return
+        except:
+            pass
     try:
-        sock.sendto(b"WHERE", ("<broadcast>", 5001)) #sent data
-        data, addr = sock.recvfrom(1024)
-        if data == b"HERE": #expected response
-            print(f"found at {addr[0]}") #debug
-            return addr[0]
-    except socket.timeout:
+        localIp, bcast = findIp()
+        print(f"Local IP: {localIp}, Broadcast: {bcast}")
+        if localIp:
+            sock.bind((localIp, 0))
+
+        t = threading.Thread(target=receiver)
+        t.start()
+        
+        for attempt in range (5):
+            print(f"Attempt {attempt+1}")
+            if localIp:
+                sock.sendto(b"WHERE", (bcast, 5001))
+                print(f"Sent to {bcast}")
+            time.sleep(0.5)
+            if result[0]:
+                break
+        t.join(timeout=timeout)
+        if result[0]:
+            print(f"found at {result[0]}")
+            return result[0]
+           # sock.sendto(b"WHERE", ("<broadcast>", 5001)) #sent data
+            # try:               
+            #     data, addr = sock.recvfrom(1024)
+            #     if data == b"HERE": #expected response
+            #         print(f"found at {addr[0]}") #debug
+            #         return addr[0]
+            # except socket.timeout:
+            #     continue
+    except Exception as e:
         print('Not found. are both devices on the same network?') #debug
+        print(f"Error: {e}")
         return None
     finally:
         sock.close()
