@@ -61,9 +61,9 @@ while True:
                         msg = json.loads(line)
                         temps = msg['temps']
                         usage = msg.get('usage')
-
+			players = msg.get('players')
                         if usage:
-                            updateDisplay(temps['cpu'], temps['ssd'], usage['cpu'], usage['mem'])
+                            updateDisplay(temps['cpu'], temps['ssd'], usage['cpu'], usage['mem'], players)
                     except json.JSONDecodeError as e:
                         print(f"json error: {e}")
                         continue

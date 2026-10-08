@@ -140,6 +140,7 @@ def backgroundDisplay(board,):
     draw.text((10, 20),  "-----------------------------",   font=font, fill=(150, 205, 255))
     draw.text((10, 40),  "CPU:",   font=font, fill=(150, 205, 255))
     draw.text((10, 70),  "MEM:",   font=font, fill=(150, 205, 255))
+    draw.text((10, 125),  "MC Online:",   font=font, fill=(150, 205, 255))
     # draw.text((10, 110),  "HDD:",   font=font, fill=(150, 205, 255))
     # draw.text((10, 180), "Board:", font=font, fill=(150, 205, 255))
 
@@ -147,13 +148,14 @@ def backgroundDisplay(board,):
     board.draw_image(0, 0, board.LCD_WIDTH, board.LCD_HEIGHT, _rgb565_bytes(image))
 def fmt(value, suffix):
     return f"{value:.0f}{suffix}" if isinstance(value, (int, float)) else f"--{suffix}"
-def updateDisplay(cpuTemp, ssdTemp, cpuUse, memUse):
+def updateDisplay(cpuTemp, ssdTemp, cpuUse, memUse, players=None):
     font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 22)
     updates = [
         (fmt(cpuTemp, "°C"), 85, 40),
  	(fmt(cpuUse, "%"), 160, 40),
  	(fmt(ssdTemp, "°C"), 85, 70),
 	(fmt(memUse, "%"), 160, 70),
+	(str(count) if count is not None else "--", 75, 160),
     ]
     for text, x, y in updates:
         patch_w, patch_h = 120, 30
