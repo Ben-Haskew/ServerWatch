@@ -98,7 +98,7 @@ def getUsageLinux():
             total = float(parts[0].split()[0])
             used = float(parts[2].split()[0])
             ram = round(used / total * 100, 1)
-    return cpu, ram
+    return cpu, mem
 
 #parse temp funciton (win)
 def getTempsWin():
@@ -208,7 +208,9 @@ while True:
                     temps = getTempsWin()
                 elif operatingSys == "Darwin": #macOS
                     print("Incompatible operating system! Please refer to the README.MD file")
-                data = json.dumps(temps) + '\n'
+                    continue
+                tranmission = {'temps': temps, 'usage': usage}
+                data = json.dumps(tranmission) + '\n'
                 client.sendall(data.encode('utf-8')) #convert to readable text
                 # print('Sent!') #debug
                 time.sleep(2)
@@ -222,7 +224,3 @@ while True:
             pass
         HOST = None
         time.sleep(5)
-                # connectFail += 1
-                # if connectFail >= 3:
-                #     client.close()
-                #     break

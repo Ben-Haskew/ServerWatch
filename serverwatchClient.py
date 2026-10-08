@@ -61,9 +61,16 @@ while True:
                 line = line.strip()
                 if line:
                     try:
-                        temps = json.loads(line)
-                        updateDisplay(board, temps['cpu'], temps['ssd'], temps['board'])
+                        msg = json.loads(line)
+                        temps = msg['temps']
+                        usage = msg.get('usage')
+
+                        if usage:
+                            updateDisplay(temps['cpu'], temps['ssd'], usage['cpu'], usage['ram'])
                     except json.JSONDecodeError as e:
                         print(f"json error: {e}")
+                        continue
+                    except KeyError as e:
+                        print(f"missing key: {e}")
                         continue
             
