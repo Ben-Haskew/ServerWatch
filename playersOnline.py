@@ -26,6 +26,8 @@ def getPlayers():
     for line in output.split('\n'):
             if '<' in line:
                 continue
+            if '[floodgate]' in line:
+                continue
             if 'joined' in line:
                 name = line.split(']: ')[1].split()[0]
                 players[name] = True
