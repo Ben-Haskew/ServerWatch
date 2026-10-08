@@ -100,8 +100,6 @@ def getUsageLinux():
             ram = round(used / total * 100, 1)
     return cpu, ram
 
-print(getUsage())
-
 #parse temp funciton (win)
 def getTempsWin():
     temps = {'cpu': None, 'ssd': None, 'board': None}
