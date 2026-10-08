@@ -150,6 +150,7 @@ def fmt(value, suffix):
     return f"{value:.0f}{suffix}" if isinstance(value, (int, float)) else f"--{suffix}"
 def updateDisplay(cpuTemp, ssdTemp, cpuUse, memUse, players=None):
     font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 22)
+    count = players['count'] if players else None
     updates = [
         (fmt(cpuTemp, "°C"), 85, 40),
  	(fmt(cpuUse, "%"), 160, 40),
