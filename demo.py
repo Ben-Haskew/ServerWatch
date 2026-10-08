@@ -12,14 +12,13 @@ sys.path.append('/home/ben/Whisplay/runtime')
 import threading
 import time
 import numpy as np
-from whisplay import WhisplayBoard
+from display import board
 from PIL import Image, ImageDraw, ImageFont
 import pygame
 import subprocess
 from whisplay_client import create_whisplay_hardware
 from display import _rgb565_bytes
 
-board = WhisplayBoard()
 board.set_backlight(15)
 currentColour = None
 flashThread = None
