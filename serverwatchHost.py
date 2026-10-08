@@ -7,10 +7,12 @@ import importlib
 import importlib.util
 import sys
 import threading
+from playersOnline import getPlayerSummary
 REQUIRED = [
     ('netifaces', 'netifaces')
 ]
-
+lastPlayerCheck = 0
+playerInfo = None
 def depChk():
     missing = []
     for module, package in REQUIRED:
@@ -203,13 +205,16 @@ while True:
                 if operatingSys == "Linux":
                     temps = getTempsLinux()
                     usage = getUsageLinux()
+                    if time.time() - lastPlayerCheck > 10:
+                        playerInfo = getPlayerSummary()
+                        lastPlayerCheck = time.time()
                     # print(f"got temps: {temps}")
                 elif operatingSys == "Windows":
                     temps = getTempsWin()
                 elif operatingSys == "Darwin": #macOS
                     print("Incompatible operating system! Please refer to the README.MD file")
                     continue
-                tranmission = {'temps': temps, 'usage': usage}
+                tranmission = {'temps': temps, 'usage': usage, 'players': playerInfo}
                 data = json.dumps(tranmission) + '\n'
                 client.sendall(data.encode('utf-8')) #convert to readable text
                 # print('Sent!') #debug

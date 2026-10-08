@@ -18,8 +18,11 @@ def loadPlayers():
 
 def getPlayers():
     players = loadPlayers()
-    result = subprocess.run(['docker', 'logs', 'mcserver', '--tail', '20'], capture_output=True, text=True) 
-    output = result.stdout + result.stderr
+    try:
+        result = subprocess.run(['docker', 'logs', 'mcserver', '--tail', '20'], capture_output=True, text=True) 
+        output = result.stdout + result.stderr
+    except (subprocess.SubprocessError, OSError):
+        return players 
     for line in output.split('\n'):
             if '<' in line:
                 continue
@@ -31,7 +34,7 @@ def getPlayers():
                 players[name] = False
     STATE_FILE.write_text(json.dumps(players, indent=2))
     return players
-if __name__ == '__main__':
+def getPlayerSummary():
     players = getPlayers()
-    print(players)
-    print(f"Players online: {sum(players.values())}")
+    online = sorted(n for n, is_on in players.items() if is_on)
+    return {'count': len(online), 'names': online}
