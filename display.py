@@ -117,7 +117,7 @@ def level(value, warn, crit):
     if value > warn:
         return 1
     return 0
-def updateLight(cpuTemp, cpuUsage, memUse):
+def updateLight(cpuTemp, cpuUse, memUse):
     global currentColour, flashing
     levels = [
         level(cpuTemp, 60, 80),   # °C
@@ -184,4 +184,4 @@ def updateDisplay(cpuTemp, ssdTemp, cpuUse, memUse, players=None):
         # After 90° rotation, x→y and y→(LCD_WIDTH-x-patch_h)
         board.draw_image(board.LCD_WIDTH - y - patch_h,x,patch.width,patch.height,_rgb565_bytes(patch))
     
-    updateLight(cpuTemp, cpuUsage, memUse)
+    updateLight(cpuTemp, cpuUse, memUse)
