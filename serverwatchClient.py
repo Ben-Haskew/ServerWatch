@@ -16,10 +16,7 @@ import threading
 # epd.Clear(0xFF)
 sys.path.append('/home/ben/Whisplay/runtime')
 from display import backgroundDisplay, updateDisplay, board
-from demo import onPress, onRelease
 
-def demonstration():
-    onRelease()
     
 def respond():
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
