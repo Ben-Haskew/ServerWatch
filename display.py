@@ -108,18 +108,33 @@ def flashStopG(board, colour):
     
     transitionThread = threading.Thread(target=transition, daemon=True)
     transitionThread.start()
-
-def updateLight(cpu):
+def level(value, warn, crit):
+    """0 = ok, 1 = warning, 2 = critical, None = no data"""
+    if value is None:
+        return None
+    if value >= crit:
+        return 2
+    if value > warn:
+        return 1
+    return 0
+def updateLight(cpuTemp, cpuUsage, memUse):
     global currentColour, flashing
-    if cpu is None:
-        colour = (0,0,255)
-        soundStop()
-    elif cpu <= 60: 
-        colour = (0,255,0) #less than 60 light turns green
-        soundStop()
+    levels = [
+        level(cpuTemp, 60, 80),   # °C
+        level(cpuUse,  60, 80),   # %
+        level(memUse,  85, 95),   # % (see note below)
+    ]
+    known = [l for l in levels if l is not None]
+    worst = max(known) if known else None
+    
+    if worst is None:
+        colour = (0, 0, 255)      # no data: blue
+    elif worst == 0:
+        colour = (0, 255, 0)      # all fine: green
     else:
-        colour = (255,0,0) #bigger than 60 light turns red
-    colourChange= cpu is not None and cpu >= 80
+        colour = (255, 0, 0)      # something above warn: red
+    colourChange = worst == 2     # something critical: flash
+
     if colour != currentColour or colourChange != flashing:
         currentColour = colour
         flashing = colourChange
