@@ -49,7 +49,7 @@ Restart=always
 RestartSec=5
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=default.target
 """
     servicePath = os.path.expanduser("~/.config/systemd/user/serverwatch.service")
     os.makedirs(os.path.dirname(servicePath), exist_ok=True)
@@ -81,7 +81,9 @@ def getTempsLinux():
                 if currentChip and 'coretemp' in currentChip and 'Package id 0' in label:
                     temps['cpu'] = temp #temp of all cores/overall temp
                 elif currentChip and 'nvme' in currentChip and 'Composite' in label:
-                    temps['ssd'] = temp #only works on nvme ssds; need SMART data for hdds
+                    temps['ssd'] = temp #ssd
+                elif currentChip and 'drivetemp' in currentChip and 'temp1' in label:
+                    temps['ssd'] = temp #hdd
                 elif currentChip and 'acpitz' in currentChip and 'temp1' in label:
                     temps['board'] = temp #temp of the whole board
                     
