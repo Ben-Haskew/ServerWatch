@@ -63,11 +63,11 @@ while True:
                         usage = msg.get('usage')
 
                         if usage:
-                            updateDisplay(temps['cpu'], temps['ssd'], usage['cpu'], usage['ram'])
+                            updateDisplay(temps['cpu'], temps['ssd'], usage['cpu'], usage['mem'])
                     except json.JSONDecodeError as e:
                         print(f"json error: {e}")
                         continue
                     except KeyError as e:
                         print(f"missing key: {e}")
                         continue
-            
+

@@ -136,23 +136,24 @@ def backgroundDisplay(board,):
     image = Image.new('RGB', (board.LCD_HEIGHT, board.LCD_WIDTH), (11, 16, 24))
     draw = ImageDraw.Draw(image)
     
-    draw.text((65, 5),  "Overview",   font=font, fill=(150, 205, 255))
+    draw.text((85, 5),  "Overview",   font=font, fill=(165, 205, 255))
     draw.text((10, 20),  "-----------------------------",   font=font, fill=(150, 205, 255))
     draw.text((10, 40),  "CPU:",   font=font, fill=(150, 205, 255))
-    draw.text((10, 60),  "MEM:",   font=font, fill=(150, 205, 255))
+    draw.text((10, 70),  "MEM:",   font=font, fill=(150, 205, 255))
     # draw.text((10, 110),  "HDD:",   font=font, fill=(150, 205, 255))
     # draw.text((10, 180), "Board:", font=font, fill=(150, 205, 255))
 
     image = image.rotate(-90, expand=True)
     board.draw_image(0, 0, board.LCD_WIDTH, board.LCD_HEIGHT, _rgb565_bytes(image))
-
-def updateDisplay(cpuTemp, ssdTemp, memUse, ramUse):
+def fmt(value, suffix):
+    return f"{value:.0f}{suffix}" if isinstance(value, (int, float)) else f"--{suffix}"
+def updateDisplay(cpuTemp, ssdTemp, cpuUse, memUse):
     font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 22)
     updates = [
-        (f"{cpuTemp:.0f}°C", 75, 40),
-        (f"{cpuUse:.0f}%",   175, 40),
-        (f"{ssdTemp:.0f}°C", 75, 70),
-        (f"{ramUse:.0f}%",   75, 130),
+        (fmt(cpuTemp, "°C"), 85, 40),
+ 	(fmt(cpuUse, "%"), 160, 40),
+ 	(fmt(ssdTemp, "°C"), 85, 70),
+	(fmt(memUse, "%"), 160, 70),
     ]
     for text, x, y in updates:
         patch_w, patch_h = 120, 30
@@ -165,4 +166,4 @@ def updateDisplay(cpuTemp, ssdTemp, memUse, ramUse):
         # After 90° rotation, x→y and y→(LCD_WIDTH-x-patch_h)
         board.draw_image(board.LCD_WIDTH - y - patch_h,x,patch.width,patch.height,_rgb565_bytes(patch))
     
-    updateLight(cpu)
+    updateLight(cpuTemp)
