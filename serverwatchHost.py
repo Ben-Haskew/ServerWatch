@@ -3,16 +3,19 @@ import os
 import time
 import socket
 import json
-import importlib
-import importlib.util
+import importlib, importlib.util
 import sys
 import threading
 from playersOnline import getPlayerSummary
+import netifaces
+import platform
+import ipaddress
 REQUIRED = [
     ('netifaces', 'netifaces')
 ]
 lastPlayerCheck = 0
 playerInfo = None
+
 def depChk():
     missing = []
     for module, package in REQUIRED:
@@ -23,8 +26,7 @@ def depChk():
             subprocess.run([sys.executable, '-m', 'pip', 'install', package, '--break-system-packages'])
         os.execv(sys.executable, [sys.executable] + sys.argv) #script restart
 depChk()
-import netifaces
-import platform
+
 # import clr
 #clr.AddReference(r'C:\Users\ben\ServerWatch\LibreHardwareMonitorLib')
 # from LibreHardwareMonitor import Hardware
@@ -62,8 +64,8 @@ WantedBy=default.target
         print("Added to autostart")
     else:
         print("Already in autostart")
-
 autoStartLinux()
+
 def getTempsLinux():
     result = subprocess.run(['/usr/bin/sensors'], capture_output=True, text=True) 
     temps = {'cpu': None, 'ssd': None, 'board': None}
@@ -90,6 +92,7 @@ def getTempsLinux():
             except (IndexError, ValueError):
                 continue 
     return temps
+
 def getUsageLinux():
     out = subprocess.run(['top', '-bn1'], capture_output=True, text=True).stdout
     cpu = mem = None
@@ -123,7 +126,7 @@ def getTempsWin():
     return temps
 
     #return CPU
-def findIp():
+def findIp(): #searches for all ips on the network
     for iface in netifaces.interfaces():
         if any(iface.startswith(x) for x in ['docker','br-','lo','veth','virbr']):
             continue
@@ -131,29 +134,46 @@ def findIp():
         if netifaces.AF_INET in addrs:
             for addr in addrs[netifaces.AF_INET]:
                 ip=addr['addr']
-                if ip.startswith('192.168.') or ip.startswith('10.') or (
-   		    ip.startswith('172.') and 16 <= int(ip.split('.')[1]) <= 31
-		):
-                    return ip, addr['broadcast']
-    return None, None
+                if ipaddress.ip_address(ip).is_private and not ip.startswith('127.'):
+                    return ip, addr.get('broadcast'), addr.get('netmask')
+    return None, None, None
 #locate device on the network
 KNOWN_HOSTS = ['192.168.0.120']
+def targets(ip, bcast, netmask, maxHosts=1024):
+    targets = []
+    if bcast:
+        targets.append(bcast)
+    targets.extend(KNOWN_HOSTS)
+
+    if ip and netmask:
+        net = ipaddress.ip_network(f"{ip}/{netmask}", strict=False)
+        print(f"[targets] network is {net} ({net.num_addresses} addresses)") #debug
+        if net.num_addresses > maxHosts:           # e.g. a /16: only scan our /24
+            net = ipaddress.ip_network(f"{ip}/24", strict=False)
+        targets.extend(str(h) for h in net.hosts() if str(h) != ip)
+
+    return list(dict.fromkeys(targets))
+
 def broadcast(timeout=5):
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
     sock.settimeout(2)
     result=[None]
     try:
-        localIp, bcast = findIp()
-        print(f"Local IP: {localIp}, Broadcast: {bcast}")
-        if localIp:
-            sock.bind((localIp, 0))
-        targets = ([bcast] if bcast else []) + KNOWN_HOSTS
+        ip, bcast, netmask = findIp()
+        print(f"Local IP: {ip}, Broadcast: {bcast}")
+        if ip:
+            sock.bind((ip, 0))
+        target = targets(ip, bcast, netmask)
         for attempt in range(5):
-            for t in targets:
-                sock.sendto(b"WHERE", (t, 5001))
+            sock.settimeout(0.2)
+            for t in target:
+                try:
+                    sock.sendto(b"WHERE", (t, 5001))
+                except OSError as e:       
+                    print(f"send to {t} failed: {e}")
             # listen for a reply for up to 1s before resending
-            sock.settimeout(1)
+            sock.settimeout(3)
             try:
                 while True:
                     data, addr = sock.recvfrom(1024)
@@ -168,15 +188,6 @@ def broadcast(timeout=5):
         return None
     finally:
         sock.close()
-def receiver():
-    try:
-        while True:
-            data, addr = sock.recvfrom(1024)
-            if data == b"HERE":
-                result[0] = addr[0]
-                return
-    except:
-        pass
 
 operatingSys = platform.system()
 PORT = 5000
@@ -185,7 +196,10 @@ HOST = None
 
 #'192.168.0.120'  #Pi WiFi IP
 
-#this SENDS the temps
+if operatingSys == "Darwin": #macOS
+    raise SystemExit("Incompatible operating system! Please refer to the README.MD file")
+
+#this SENDS the data
 while True:
     try:
         HOST = broadcast()
@@ -213,9 +227,6 @@ while True:
                     # print(f"got temps: {temps}")
                 elif operatingSys == "Windows":
                     temps = getTempsWin()
-                elif operatingSys == "Darwin": #macOS
-                    print("Incompatible operating system! Please refer to the README.MD file")
-                    continue
                 tranmission = {'temps': temps, 'usage': usage, 'players': playerInfo}
                 data = json.dumps(tranmission) + '\n'
                 client.sendall(data.encode('utf-8')) #convert to readable text
@@ -227,7 +238,7 @@ while True:
         print('retrying now...')
         try:
             client.close()
-        except:
+        except OSError:
             pass
         HOST = None
         time.sleep(5)
