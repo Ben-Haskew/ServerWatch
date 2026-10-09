@@ -231,7 +231,7 @@ while True:
                 data = json.dumps(tranmission) + '\n'
                 client.sendall(data.encode('utf-8')) #convert to readable text
                 # print('Sent!') #debug
-                time.sleep(2)
+                time.sleep(5) #how long between each send
     except(ConnectionRefusedError, OSError) as e:
         print({e})
         print('Could not connect; Is the script running client side?')
