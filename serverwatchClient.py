@@ -17,7 +17,9 @@ from display import board, ledOff
 # epd.init()
 # epd.Clear(0xFF)
 sys.path.append('/home/ben/Whisplay/runtime')
-from display import backgroundDisplay, updateDisplay, board
+from display import backgroundDisplay, updateDisplay, board, startDisplay
+
+startDisplay()
 
 def shutdown(signum, frame):
     ledOff(board)
@@ -55,9 +57,8 @@ server.bind((HOST, PORT))
 server.listen(1) #listen
 
 print(f'Listening on {HOST}:{PORT}')
-
+backgroundDrawn = False
 #this RECIEVES the temps
-backgroundDisplay(board)
 while True:
     conn, addr = server.accept()
     #print(f'Connected from {addr}')
@@ -78,6 +79,9 @@ while True:
                         usage = msg.get('usage')
                         players = msg.get('players')
                         if usage:
+                            if not backgroundDrawn:
+                                backgroundDisplay(board)
+                                backgroundDrawn = True
                             updateDisplay(temps['cpu'], temps['ssd'], usage['cpu'], usage['mem'], players)
                     except json.JSONDecodeError as e:
                         print(f"json error: {e}")
@@ -85,4 +89,3 @@ while True:
                     except KeyError as e:
                         print(f"missing key: {e}")
                         continue
-

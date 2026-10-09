@@ -7,6 +7,7 @@ from whisplay import WhisplayBoard
 from PIL import Image, ImageDraw, ImageFont
 import pygame
 import subprocess
+import time
 
 board = WhisplayBoard()
 board.set_backlight(15)
@@ -160,6 +161,12 @@ def updateLight(cpuTemp, cpuUse, memUse):
             soundStop()
 
 #draw the text once as it dosen't change
+def startDisplay():
+    font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 22)
+    image = Image.new('RGB', (board.LCD_HEIGHT, board.LCD_WIDTH), (11, 16, 24))
+    image = Image.open("/home/ben/ServerWatch/serverwatchsplash.png").convert("RGB")
+    image = image.rotate(-90, expand=True)
+    board.draw_image(0, 0, board.LCD_WIDTH, board.LCD_HEIGHT, _rgb565_bytes(image))
 def backgroundDisplay(board,):
     font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 22)
     image = Image.new('RGB', (board.LCD_HEIGHT, board.LCD_WIDTH), (11, 16, 24))
