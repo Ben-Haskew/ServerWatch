@@ -42,16 +42,19 @@ def autoStartLinux(): #add to systemd on first run
     scriptPath = os.path.abspath(__file__)
     service = f"""[Unit]
 Description=ServerWatch Host
-After=network.target
+After=network-online.target
+Wants=network-online.target
 
 [Service]
 Type=simple
+WorkingDirectory={scriptPath}
 ExecStart=/usr/bin/python3 {scriptPath}
+Environment=PYTHONUNBUFFERED=1
 Restart=always
 RestartSec=5
 
 [Install]
-WantedBy=default.target
+WantedBy=multi-user.target
 """
     servicePath = os.path.expanduser("~/.config/systemd/user/serverwatch.service")
     os.makedirs(os.path.dirname(servicePath), exist_ok=True)
