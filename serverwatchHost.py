@@ -25,35 +25,37 @@ def depChk():
         os.execv(sys.executable, [sys.executable] + sys.argv) #script restart
 depChk()
 
-def autoStartLinux(): #add to systemd on first run
-    scriptPath = os.path.abspath(__file__)
-    service = f"""[Unit]
-Description=ServerWatch Host
+def autoStartLinux():
+    path = "/etc/systemd/system/serverwatch.service"
+    if os.environ.get("INVOCATION_ID") or os.path.exists(path):
+        return  # started by systemd, or already installed
+
+    if os.geteuid() != 0:
+        os.execvp("sudo", ["sudo", sys.executable] + sys.argv)  # re-run as root
+
+    script = os.path.abspath(__file__)
+    with open(path, "w") as f:
+        f.write(f"""[Unit]
+Description=ServerWatch Client
 After=network-online.target
 Wants=network-online.target
 
 [Service]
-Type=simple
-WorkingDirectory={scriptPath}
-ExecStart=/usr/bin/python3 {scriptPath}
+User={os.environ.get("SUDO_USER", "root")}
+WorkingDirectory={os.path.dirname(script)}
+ExecStart={sys.executable} {script}
 Environment=PYTHONUNBUFFERED=1
 Restart=always
 RestartSec=5
 
 [Install]
 WantedBy=multi-user.target
-"""
-    servicePath = os.path.expanduser("~/.config/systemd/user/serverwatch.service")
-    os.makedirs(os.path.dirname(servicePath), exist_ok=True)
-    
-    if not os.path.exists(servicePath):
-        with open(servicePath, 'w') as f:
-            f.write(service)
-        subprocess.run(['systemctl', '--user', 'enable', 'serverwatch.service'])
-        subprocess.run(['systemctl', '--user', 'start', 'serverwatch.service'])
-        print("Added to autostart")
-    else:
-        print("Already in autostart")
+""")
+    subprocess.run(["systemctl", "daemon-reload"])
+    subprocess.run(["systemctl", "enable", "--now", "serverwatch.service"])
+    print("Installed as system service")
+    sys.exit(0)  # the service is already running this script
+
 autoStartLinux()
 
 def getTempsLinux():
@@ -115,7 +117,7 @@ def targets(ip, bcast, netmask, maxHosts=1024):
         targets.append(bcast)
     if ip and netmask:
         net = ipaddress.ip_network(f"{ip}/{netmask}", strict=False)
-        print(f"[targets] network is {net} ({net.num_addresses} addresses)") #debug
+        #print(f"[targets] network is {net} ({net.num_addresses} addresses)") #debug
         if net.num_addresses > maxHosts:           # e.g. a /16: only scan our /24
             net = ipaddress.ip_network(f"{ip}/24", strict=False)
         targets.extend(str(h) for h in net.hosts() if str(h) != ip)
@@ -129,7 +131,7 @@ def broadcast(timeout=5):
     result=[None]
     try:
         ip, bcast, netmask = findIp()
-        print(f"Local IP: {ip}, Broadcast: {bcast}")
+        #print(f"Local IP: {ip}, Broadcast: {bcast}") #debug
         if ip:
             sock.bind((ip, 0))
         target = targets(ip, bcast, netmask)
@@ -138,14 +140,15 @@ def broadcast(timeout=5):
             for t in target:
                 try:
                     sock.sendto(b"WHERE", (t, 5001))
-                except OSError as e:       
-                    print(f"send to {t} failed: {e}")
+                except OSError as e:
+                     continue
+                    #print(f"send to {t} failed: {e}") #debug
             # listen for a reply for up to 1s before resending
             sock.settimeout(3)
             try:
                 while True:
                     data, addr = sock.recvfrom(1024)
-                    print(f"got {data!r} from {addr}")
+                    #print(f"got {data!r} from {addr}") #debug
                     if data == b"HERE":
                         return addr[0]
             except socket.timeout:
@@ -157,7 +160,6 @@ def broadcast(timeout=5):
     finally:
         sock.close()
 
-operatingSys = platform.system()
 PORT = 5000
 DISCOVERY_PORT = 5001
 HOST = None
@@ -169,7 +171,7 @@ while True:
     try:
         HOST = broadcast()
         if HOST is None:
-            print("not found. retrying") #debug
+            #print("not found. retrying") #debug
             time.sleep(5)
             continue
         client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
