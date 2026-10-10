@@ -1,3 +1,36 @@
+import os, sys, subprocess
+def autoStartLinux():
+    path = "/etc/systemd/system/serverwatch.service"
+    if os.environ.get("INVOCATION_ID") or os.path.exists(path):
+        return  # started by systemd, or already installed
+
+    if os.geteuid() != 0:
+        os.execvp("sudo", ["sudo", sys.executable] + sys.argv)  # re-run as root
+
+    script = os.path.abspath(__file__)
+    with open(path, "w") as f:
+        f.write(f"""[Unit]
+Description=ServerWatch Client
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User={os.environ.get("SUDO_USER", "root")}
+WorkingDirectory={os.path.dirname(script)}
+ExecStart={sys.executable} {script}
+Environment=PYTHONUNBUFFERED=1
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+""")
+    subprocess.run(["systemctl", "daemon-reload"])
+    subprocess.run(["systemctl", "enable", "--now", "serverwatch.service"])
+    print("Installed as system service")
+    sys.exit(0)  # the service is already running this script
+
+autoStartLinux()
 #import of screen drivers
 import sys
 # sys.path.append('/home/ben/waveshare/e-Paper/RaspberryPi_JetsonNano/python/lib')
@@ -6,8 +39,6 @@ import sys
 #from PIL import Image, ImageDraw, ImageFont
 import time
 import socket
-import sys
-import os
 import json
 import threading
 import signal
@@ -17,7 +48,21 @@ from display import board, ledOff
 # epd.init()
 # epd.Clear(0xFF)
 sys.path.append('/home/ben/Whisplay/runtime')
-from display import backgroundDisplay, updateDisplay, board, startDisplay
+from display import backgroundDisplay, updateDisplay, board, startDisplay, noDataDisplay
+
+dataTimeout = 15          # seconds without data before the image appears
+lastData = time.time()      # starts now, so it also covers "never connected since boot"
+showingNoData = False
+
+
+
+def watchdog():
+    global showingNoData
+    while True:
+        time.sleep(1)
+        if not showingNoData and time.time() - lastData > dataTimeout:
+            showingNoData = True
+            noDataDisplay()
 
 startDisplay()
 
@@ -57,15 +102,20 @@ server.bind((HOST, PORT))
 server.listen(1) #listen
 
 print(f'Listening on {HOST}:{PORT}')
+threading.Thread(target=watchdog, daemon=True).start()
 backgroundDrawn = False
 #this RECIEVES the temps
 while True:
     conn, addr = server.accept()
     #print(f'Connected from {addr}')
     with conn:
+        conn.settimeout(10)
         buffer=""
         while True:
-            data = conn.recv(1024)
+            try:
+                data = conn.recv(1024)
+            except socket.timeout:
+                break
             if not data:
                 break
             buffer +=data.decode('utf-8')
@@ -79,6 +129,10 @@ while True:
                         usage = msg.get('usage')
                         players = msg.get('players')
                         if usage:
+                            lastData = time.time()
+                            if showingNoData:            # coming back from no data screen
+                                showingNoData = False
+                                backgroundDrawn = False
                             if not backgroundDrawn:
                                 backgroundDisplay(board)
                                 backgroundDrawn = True
