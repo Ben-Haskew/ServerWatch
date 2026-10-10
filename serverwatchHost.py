@@ -1,18 +1,16 @@
 import subprocess
 import os
 import time
-import socket
+import socket, netifaces, ipaddress
 import json
 import importlib, importlib.util
 import sys
 import threading
 from playersOnline import getPlayerSummary
-import netifaces
-import platform
-import ipaddress
 REQUIRED = [
     ('netifaces', 'netifaces')
 ]
+
 lastPlayerCheck = 0
 playerInfo = None
 
@@ -26,17 +24,6 @@ def depChk():
             subprocess.run([sys.executable, '-m', 'pip', 'install', package, '--break-system-packages'])
         os.execv(sys.executable, [sys.executable] + sys.argv) #script restart
 depChk()
-
-# import clr
-#clr.AddReference(r'C:\Users\ben\ServerWatch\LibreHardwareMonitorLib')
-# from LibreHardwareMonitor import Hardware
-
-
-# computer = Hardware.Computer()
-# computer.IsCPUEnabled = True
-# computer.Open()
-#parse temps function
-#this GETS the temps
 
 def autoStartLinux(): #add to systemd on first run
     scriptPath = os.path.abspath(__file__)
@@ -110,28 +97,9 @@ def getUsageLinux():
             mem = round(used / total * 100, 1)
     return {'cpu': cpu, 'mem': mem}
 
-#parse temp funciton (win)
-def getTempsWin():
-    temps = {'cpu': None, 'ssd': None, 'board': None}
-    try:
-        for hw in computer.Hardware:
-            if hw.HardwareType == Hardware.HardwareType.CPU:
-                hw.Update()
-                for sensor in hw.Sensors:
-                    if sensor.SensorType == Hardware.SensorType.Temperature:
-                        temp = sensor.Value
-                        if temp is not None and temp > 0:
-                            temps['cpu'] = float(temp)
-                            break
-    except Exception as e:
-        print(f"read error: {e}")
-    print(temps)    
-    return temps
-
-    #return CPU
 def findIp(): #searches for all ips on the network
     for iface in netifaces.interfaces():
-        if any(iface.startswith(x) for x in ['docker','br-','lo','veth','virbr']):
+        if any(iface.startswith(x) for x in ['docker','br-','lo','veth','virbr']): #exclude these
             continue
         addrs= netifaces.ifaddresses(iface)
         if netifaces.AF_INET in addrs:
@@ -141,13 +109,10 @@ def findIp(): #searches for all ips on the network
                     return ip, addr.get('broadcast'), addr.get('netmask')
     return None, None, None
 #locate device on the network
-KNOWN_HOSTS = ['192.168.0.120']
 def targets(ip, bcast, netmask, maxHosts=1024):
     targets = []
     if bcast:
         targets.append(bcast)
-    targets.extend(KNOWN_HOSTS)
-
     if ip and netmask:
         net = ipaddress.ip_network(f"{ip}/{netmask}", strict=False)
         print(f"[targets] network is {net} ({net.num_addresses} addresses)") #debug
@@ -199,9 +164,6 @@ HOST = None
 
 #'192.168.0.120'  #Pi WiFi IP
 
-if operatingSys == "Darwin": #macOS
-    raise SystemExit("Incompatible operating system! Please refer to the README.MD file")
-
 #this SENDS the data
 while True:
     try:
@@ -220,21 +182,16 @@ while True:
         connectFail=0
 
         while True:
-                # print(f'Connected to {HOST}:{PORT}') #debug
-                if operatingSys == "Linux":
-                    temps = getTempsLinux()
-                    usage = getUsageLinux()
-                    if time.time() - lastPlayerCheck > 10:
-                        playerInfo = getPlayerSummary()
-                        lastPlayerCheck = time.time()
-                    # print(f"got temps: {temps}")
-                elif operatingSys == "Windows":
-                    temps = getTempsWin()
-                tranmission = {'temps': temps, 'usage': usage, 'players': playerInfo}
-                data = json.dumps(tranmission) + '\n'
-                client.sendall(data.encode('utf-8')) #convert to readable text
-                # print('Sent!') #debug
-                time.sleep(5) #how long between each send
+            temps = getTempsLinux()
+            usage = getUsageLinux()
+            if time.time() - lastPlayerCheck > 10:
+                playerInfo = getPlayerSummary()
+                lastPlayerCheck = time.time()
+
+            tranmission = {'temps': temps, 'usage': usage, 'players': playerInfo}
+            data = json.dumps(tranmission) + '\n'
+            client.sendall(data.encode('utf-8')) #convert to readable text
+            time.sleep(5) #how long between each send
     except(ConnectionRefusedError, OSError) as e:
         print({e})
         print('Could not connect; Is the script running client side?')
