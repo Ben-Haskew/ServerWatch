@@ -17,7 +17,8 @@ flashStop = threading.Event()
 transitionThread = None
 transitionStop = threading.Event()
 flashing=False
-curSound=None 
+curSound=None
+drawLock = threading.Lock()
 
 #DONT TOUCH#
 #function to convert PIL image into RGB
@@ -26,7 +27,7 @@ def _rgb565_bytes(image: Image.Image) -> bytes:
     r, g, b = rgb[:,:,0], rgb[:,:,1], rgb[:,:,2]
     rgb565 = ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | (b >> 3)
     return rgb565.astype(np.uint16).byteswap().tobytes()
-
+#sound
 def initAudio():
     card = None
     try:
@@ -66,7 +67,7 @@ def soundStop():
     global curSound
     pygame.mixer.stop()
     curSound=None
-
+#light
 def flashLight(board, colour, speed=0.2):
     global flashThread, flashStop
     flashStop.set()
@@ -159,8 +160,22 @@ def updateLight(cpuTemp, cpuUse, memUse):
         else:
             flashStopG(board, colour)
             soundStop()
-
+noDataColour= (255, 0, 165)
+def noDataLight(colour=noDataColour):
+    global currentColour, flashing
+    if colour != currentColour or flashing:
+        currentColour = colour
+        flashing = False
+        flashStopG(board, colour)    # stops any flashing and fades to the colour
+        soundStop()
+#screen
 #draw the text once as it dosen't change
+def noDataDisplay():
+    image = Image.open("/home/ben/ServerWatch/NODATASPLASH.png").convert("RGB")   # 280x240
+    image = image.rotate(-90, expand=True)
+    with drawLock:
+        board.draw_image(0, 0, board.LCD_WIDTH, board.LCD_HEIGHT, _rgb565_bytes(image))
+    noDataLight()
 def startDisplay():
     font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 22)
     image = Image.new('RGB', (board.LCD_HEIGHT, board.LCD_WIDTH), (11, 16, 24))
